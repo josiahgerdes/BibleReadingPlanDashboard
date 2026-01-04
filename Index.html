@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Bible Reading</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Helvetica', Arial, sans-serif;
+            background: linear-gradient(135deg, #2d4a2b 0%, #1a3a1a 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        .view { display: none; }
+        .view.active { display: block; }
+
+        h1 { color: #414832; text-align: center; margin-bottom: 10px; font-size: 28px; }
+        h2 { color: #414832; text-align: center; margin-bottom: 20px; font-size: 22px; }
+
+        .user-info {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .user-email { font-weight: bold; color: #414832; }
+        .date-display { text-align: center; color: #666; margin-bottom: 30px; font-size: 16px; }
+
+        .reading-card {
+            background: #f8f9fa;
+            border-left: 5px solid #c5a572;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .reading-card.completed {
+            background: #e8f5e9;
+            border-left-color: #4caf50;
+        }
+
+        .day-number {
+            color: #c5a572;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .reading-card.completed .day-number { color: #4caf50; }
+
+        .reading-text {
+            color: #414832;
+            font-size: 24px;
+            font-weight: bold;
+            line-height: 1.4;
+        }
+
+        .form-group { margin-bottom: 20px; }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #666;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #c5a572;
+        }
+
+        .error-message { color: #f44336; font-size: 14px; margin-top: 10px; text-align: center; }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary { background: #414832; color: white; margin-bottom: 10px; }
+        .btn-primary:hover { background: #2d3322; transform: translateY(-2px); }
+
+        .btn-complete { margin-bottom: 30px; }
+        .btn-complete.mark-complete { background: #4caf50; color: white; }
+        .btn-complete.mark-complete:hover { background: #45a049; }
+        .btn-complete.mark-incomplete { background: #ff9800; color: white; }
+        .btn-complete.mark-incomplete:hover { background: #fb8c00; }
+
+        .completion-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .stat { text-align: center; }
+        .stat-number { font-size: 24px; font-weight: bold; color: #414832; }
+        .stat-label { font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-top: 5px; }
+
+        .progress-section { margin-bottom: 30px; }
+        
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #c5a572 0%, #b8956a 100%);
+            transition: width 0.3s ease;
+        }
+
+        .navigation { display: flex; gap: 10px; margin-bottom: 20px; }
+        .btn-nav { flex: 1; background: #414832; color: white; }
+        .btn-nav:hover { background: #2d3322; }
+        .btn-nav:disabled { background: #ccc; cursor: not-allowed; }
+        .btn-today { flex: 1; background: #c5a572; color: white; }
+        .btn-today:hover { background: #b8956a; }
+
+        .auth-toggle { text-align: center; margin-top: 15px; color: #666; font-size: 14px; }
+        .auth-toggle a { color: #414832; font-weight: bold; cursor: pointer; text-decoration: none; }
+        .auth-toggle a:hover { text-decoration: underline; }
+
+        .btn-signout { background: #666; color: white; margin-top: 10px; padding: 8px 16px; width: auto; }
+        .btn-signout:hover { background: #555; }
+
+        .setup-notice {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #856404;
+            font-size: 14px;
+        }
+
+        .setup-notice strong { display: block; margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Setup Notice -->
+        <div class="setup-notice" id="setupNotice">
+            <strong>⚠️ Firebase Setup Required</strong>
+            Please configure your Firebase project credentials in the code (look for firebaseConfig).
+            <br><br>
+            <strong>Quick Setup:</strong><br>
+            1. Create a Firebase project at console.firebase.google.com<br>
+            2. Enable Email/Password authentication<br>
+            3. Create a Firestore database<br>
+            4. Copy your config and replace firebaseConfig in the code
+        </div>
+
+        <!-- Auth View -->
+        <div class="view active" id="authView">
+            <h1>Daily Bible Reading</h1>
+            
+            <div id="loginForm">
+                <h2>Sign In</h2>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="loginEmail" placeholder="Enter your email">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="loginPassword" placeholder="Enter your password">
+                </div>
+                <button class="btn-primary" onclick="signIn()">Sign In</button>
+                <div class="auth-toggle">
+                    Don't have an account? <a onclick="showSignup()">Sign Up</a>
+                </div>
+                <div id="loginError" class="error-message"></div>
+            </div>
+
+            <div id="signupForm" style="display: none;">
+                <h2>Create Account</h2>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="signupEmail" placeholder="Enter your email">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="signupPassword" placeholder="At least 6 characters">
+                </div>
+                <button class="btn-primary" onclick="signUp()">Create Account</button>
+                <div class="auth-toggle">
+                    Already have an account? <a onclick="showLogin()">Sign In</a>
+                </div>
+                <div id="signupError" class="error-message"></div>
+            </div>
+        </div>
+
+        <!-- Main App View -->
+        <div class="view" id="mainView">
+            <h1>Daily Bible Reading</h1>
+            <div class="user-info">
+                <div class="user-email" id="userEmail"></div>
+                <button class="btn-signout" onclick="signOut()">Sign Out</button>
+            </div>
+            <div class="date-display" id="dateDisplay"></div>
+
+            <div class="reading-card" id="readingCard">
+                <div class="day-number" id="dayNumber"></div>
+                <div class="reading-text" id="readingText"></div>
+            </div>
+
+            <button class="btn-complete mark-complete" id="completeBtn" onclick="toggleComplete()">
+                Mark as Complete
+            </button>
+
+            <div class="completion-stats">
+                <div class="stat">
+                    <div class="stat-number" id="completedCount">0</div>
+                    <div class="stat-label">Completed</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number" id="remainingCount">358</div>
+                    <div class="stat-label">Remaining</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number" id="streakCount">0</div>
+                    <div class="stat-label">Streak</div>
+                </div>
+            </div>
+
+            <div class="progress-section">
+                <div class="progress-label">
+                    <span>Annual Progress</span>
+                    <span id="progressPercent"></span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-label">
+                    <span>Completion Progress</span>
+                    <span id="completionPercent">0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="completionFill" style="background: linear-gradient(90deg, #4caf50 0%, #45a049 100%);"></div>
+                </div>
+            </div>
+
+            <div class="navigation">
+                <button class="btn-nav" id="prevBtn" onclick="changeDay(-1)">← Previous</button>
+                <button class="btn-today" onclick="goToToday()">Today</button>
+                <button class="btn-nav" id="nextBtn" onclick="changeDay(1)">Next →</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut as fbSignOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        // REPLACE THIS with your Firebase config from Firebase Console
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
+        let currentDisplayDay = null;
+        let completedDays = {};
+
+        const allReadings = [[1,"Genesis 1-3"],[2,"Genesis 4-7"],[3,"Genesis 8-11"],[4,"Genesis 12-15"],[5,"Genesis 16-18"],[6,"Genesis 19-21"],[7,"Genesis 22-24"],[8,"Genesis 25-28"],[9,"Genesis 29-31"],[10,"Genesis 32-34"],[11,"Genesis 35-37"],[12,"Genesis 38-40"],[13,"Genesis 41-42"],[14,"Genesis 43-45"],[15,"Genesis 46-47"],[16,"Genesis 48-50"],[17,"Exodus 1-3"],[18,"Exodus 4-6"],[19,"Exodus 7-9"],[20,"Exodus 10-12"],[21,"Exodus 13-15"],[22,"Exodus 16-18"],[23,"Exodus 19-21"],[24,"Exodus 22-24"],[25,"Exodus 25-27"],[26,"Exodus 28-29"],[27,"Exodus 30-31"],[28,"Exodus 32-34"],[29,"Exodus 35-40"],[30,"Leviticus 1-4"],[31,"Leviticus 5-7"],[32,"Leviticus 8-10"],[33,"Leviticus 11-13"],[34,"Leviticus 14-15"],[35,"Leviticus 16-18"],[36,"Leviticus 19-20"],[37,"Leviticus 21-23"],[38,"Leviticus 24-25"],[39,"Leviticus 26-27"],[40,"Numbers 1-4"],[41,"Numbers 5-7"],[42,"Numbers 8-10"],[43,"Numbers 11-13"],[44,"Numbers 14-16"],[45,"Numbers 17-18"],[46,"Numbers 19-21"],[47,"Numbers 22-24"],[48,"Numbers 25-27"],[49,"Numbers 28-30"],[50,"Numbers 31-32"],[51,"Numbers 33-34"],[52,"Numbers 35-36"],[53,"Deuteronomy 1-3"],[54,"Deuteronomy 4-6"],[55,"Deuteronomy 7-9"],[56,"Deuteronomy 10-12"],[57,"Deuteronomy 13-14"],[58,"Deuteronomy 15-16"],[59,"Deuteronomy 17-20"],[60,"Deuteronomy 21-23"],[61,"Deuteronomy 24-27"],[62,"Deuteronomy 28-29"],[63,"Deuteronomy 30-31"],[64,"Deuteronomy 32-34"],[65,"Joshua 1-4"],[66,"Joshua 5-8"],[67,"Joshua 9-12"],[68,"Joshua 13-21"],[69,"Joshua 22-24"],[70,"Judges 1-3"],[71,"Judges 4-5"],[72,"Judges 6-8"],[73,"Judges 9-12"],[74,"Judges 13-15"],[75,"Judges 16-18"],[76,"Judges 19-21"],[77,"Ruth 1-4"],[78,"1 Samuel 1-3"],[79,"1 Samuel 4-8"],[80,"1 Samuel 9-12"],[81,"1 Samuel 13-14"],[82,"1 Samuel 15-17"],[83,"1 Samuel 18-20"],[84,"1 Samuel 21-24"],[85,"1 Samuel 25-27"],[86,"1 Samuel 28-31"],[87,"2 Samuel 1-3"],[88,"2 Samuel 4-8"],[89,"2 Samuel 9-12"],[90,"2 Samuel 13-15"],[91,"2 Samuel 16-18"],[92,"2 Samuel 19-21"],[93,"2 Samuel 22-24"],[94,"1 Kings 1-3"],[95,"1 Kings 4-7"],[96,"1 Kings 8-10"],[97,"1 Kings 11-13"],[98,"1 Kings 14-16"],[99,"1 Kings 17-19"],[100,"1 Kings 20-22"],[101,"2 Kings 1-3"],[102,"2 Kings 4-7"],[103,"2 Kings 8-11"],[104,"2 Kings 12-14"],[105,"2 Kings 15-17"],[106,"2 Kings 18-19"],[107,"2 Kings 20-22"],[108,"2 Kings 23-25"],[109,"Isaiah 1-4"],[110,"Isaiah 5-8"],[111,"Isaiah 9-12"],[112,"Isaiah 13-17"],[113,"Isaiah 18-22"],[114,"Isaiah 23-27"],[115,"Isaiah 28-30"],[116,"Isaiah 31-35"],[117,"Isaiah 36-38"],[118,"Isaiah 39-41"],[119,"Isaiah 42-44"],[120,"Isaiah 45-48"],[121,"Isaiah 49-51"],[122,"Isaiah 52-54"],[123,"Isaiah 55-57"],[124,"Isaiah 58-60"],[125,"Isaiah 61-64"],[126,"Isaiah 65-66"],[127,"Jeremiah 1-3"],[128,"Jeremiah 4-6"],[129,"Jeremiah 7-9"],[130,"Jeremiah 10-13"],[131,"Jeremiah 14-17"],[132,"Jeremiah 18-22"],[133,"Jeremiah 23-25"],[134,"Jeremiah 26-29"],[135,"Jeremiah 30-33"],[136,"Jeremiah 34-36"],[137,"Jeremiah 37-39"],[138,"Jeremiah 40-44"],[139,"Jeremiah 45-48"],[140,"Jeremiah 49-50"],[141,"Jeremiah 51-52"],[142,"Ezekiel 1-3"],[143,"Ezekiel 4-7"],[144,"Ezekiel 8-11"],[145,"Ezekiel 12-14"],[146,"Ezekiel 15-17"],[147,"Ezekiel 18-20"],[148,"Ezekiel 21-24"],[149,"Ezekiel 25-28"],[150,"Ezekiel 29-30"],[151,"Ezekiel 31-33"],[152,"Ezekiel 34-37"],[153,"Ezekiel 38-39"],[154,"Ezekiel 40-43"],[155,"Ezekiel 44-48"],[156,"Hosea 1-5"],[157,"Hosea 6-10"],[158,"Hosea 11-14"],[159,"Joel 1-3"],[160,"Amos 1-5"],[161,"Amos 6-9"],[162,"Obadiah 1"],[163,"Jonah 1-4"],[164,"Micah 1-4"],[165,"Micah 5-7"],[166,"Nahum 1-3"],[167,"Habakkuk 1-3"],[168,"Zephaniah 1-3"],[169,"Haggai 1-2"],[170,"Zechariah 1-4"],[171,"Zechariah 5-8"],[172,"Zechariah 9-14"],[173,"Malachi 1-2"],[174,"Malachi 3-4"],[175,"Psalms 1-2"],[176,"Proverbs 1-3"],[177,"Proverbs 4-6"],[178,"Proverbs 7-9"],[179,"Proverbs 10-12"],[180,"Proverbs 13-15"],[181,"Proverbs 16-18"],[182,"Proverbs 19-21"],[183,"Proverbs 22-24"],[184,"Proverbs 25-27"],[185,"Proverbs 28-31"],[186,"Job 1-3"],[187,"Job 4-7"],[188,"Job 8-10"],[189,"Job 11-14"],[190,"Job 15-19"],[191,"Job 20-24"],[192,"Job 25-28"],[193,"Job 29-31"],[194,"Job 32-34"],[195,"Job 35-37"],[196,"Job 38-39"],[197,"Job 40-42"],[198,"Ecclesiastes 1-4"],[199,"Ecclesiastes 5-8"],[200,"Ecclesiastes 9-12"],[201,"Song of Songs 1-4"],[202,"Song of Songs 5-8"],[203,"Lamentations 1-2"],[204,"Lamentations 3"],[205,"Lamentations 4-5"],[206,"Esther 1-5"],[207,"Esther 6-10"],[208,"Daniel 1-3"],[209,"Daniel 4-6"],[210,"Daniel 7-9"],[211,"Daniel 10-12"],[212,"Ezra 1-3"],[213,"Ezra 4-6"],[214,"Ezra 7-10"],[215,"Nehemiah 1-4"],[216,"Nehemiah 5-7"],[217,"Nehemiah 8-9"],[218,"Nehemiah 10-11"],[219,"Nehemiah 12-13"],[220,"1 Chronicles 1-9"],[221,"1 Chronicles 10-14"],[222,"1 Chronicles 15-17"],[223,"1 Chronicles 18-21"],[224,"1 Chronicles 22-24"],[225,"1 Chronicles 25-29"],[226,"2 Chronicles 1-4"],[227,"2 Chronicles 5-8"],[228,"2 Chronicles 9-12"],[229,"2 Chronicles 13-17"],[230,"2 Chronicles 18-20"],[231,"2 Chronicles 21-24"],[232,"2 Chronicles 25-27"],[233,"2 Chronicles 28-31"],[234,"2 Chronicles 32-34"],[235,"2 Chronicles 35-36"],[236,"Matthew 1-2"],[237,"Matthew 3-4"],[238,"Matthew 5-6"],[239,"Matthew 7-8"],[240,"Matthew 9-10"],[241,"Matthew 11-12"],[242,"Matthew 13-14"],[243,"Matthew 15-16"],[244,"Matthew 17-18"],[245,"Matthew 19-20"],[246,"Matthew 21-22"],[247,"Matthew 23-24"],[248,"Matthew 25-26"],[249,"Matthew 27-28"],[250,"Mark 1-2"],[251,"Mark 3-4"],[252,"Mark 5-6"],[253,"Mark 7-8"],[254,"Mark 9-10"],[255,"Mark 11-12"],[256,"Mark 13-14"],[257,"Mark 15-16"],[258,"John 1-2"],[259,"John 3-4"],[260,"John 5-6"],[261,"John 7-8"],[262,"John 9-10"],[263,"John 11-12"],[264,"John 13-15"],[265,"John 16-18"],[266,"John 19-21"],[267,"Luke 1"],[268,"Luke 2-3"],[269,"Luke 4-5"],[270,"Luke 6-7"],[271,"Luke 8-9"],[272,"Luke 10-11"],[273,"Luke 12-13"],[274,"Luke 14-16"],[275,"Luke 17-18"],[276,"Luke 19-20"],[277,"Luke 21-22"],[278,"Luke 23-24"],[279,"Acts 1-2"],[280,"Acts 3-4"],[281,"Acts 5-6"],[282,"Acts 7-8"],[283,"Acts 9-10"],[284,"Acts 11-12"],[285,"Acts 13-14"],[286,"Acts 15-16"],[287,"Acts 17-18"],[288,"Acts 19-20"],[289,"Acts 21-22"],[290,"Acts 23-24"],[291,"Acts 25-26"],[292,"Acts 27-28"],[293,"Romans 1-2"],[294,"Romans 3-4"],[295,"Romans 5-6"],[296,"Romans 7-8"],[297,"Romans 9-11"],[298,"Romans 12-13"],[299,"Romans 14-15"],[300,"Romans 16"],[301,"1 Corinthians 1-2"],[302,"1 Corinthians 3-4"],[303,"1 Corinthians 5-6"],[304,"1 Corinthians 7-8"],[305,"1 Corinthians 9-10"],[306,"1 Corinthians 11-12"],[307,"1 Corinthians 13-14"],[308,"1 Corinthians 15-16"],[309,"2 Corinthians 1-2"],[310,"2 Corinthians 3-4"],[311,"2 Corinthians 5-6"],[312,"2 Corinthians 7-8"],[313,"2 Corinthians 9-10"],[314,"2 Corinthians 11-13"],[315,"Galatians 1-2"],[316,"Galatians 3-4"],[317,"Galatians 5-6"],[318,"Ephesians 1-2"],[319,"Ephesians 3-4"],[320,"Ephesians 5-6"],[321,"Philippians 1-2"],[322,"Philippians 3-4"],[323,"Colossians 1-2"],[324,"Colossians 3-4"],[325,"1 Thessalonians 1-2"],[326,"1 Thessalonians 3-4"],[327,"1 Thessalonians 5"],[328,"2 Thessalonians 1-3"],[329,"1 Timothy 1-2"],[330,"1 Timothy 3-4"],[331,"1 Timothy 5-6"],[332,"2 Timothy 1-4"],[333,"Titus 1-3"],[334,"Philemon 1"],[335,"Hebrews 1-2"],[336,"Hebrews 3-4"],[337,"Hebrews 5-6"],[338,"Hebrews 7-8"],[339,"Hebrews 9-10"],[340,"Hebrews 11-13"],[341,"James 1-3"],[342,"James 4-5"],[343,"1 Peter 1-2"],[344,"1 Peter 3-5"],[345,"2 Peter 1-3"],[346,"1 John 1-2"],[347,"1 John 3-5"],[348,"2 & 3 John 1, 1"],[349,"Jude 1"],[350,"Revelation 1-3"],[351,"Revelation 4-5"],[352,"Revelation 6-9"],[353,"Revelation 10-11"],[354,"Revelation 12-14"],[355,"Revelation 15-16"],[356,"Revelation 17-18"],[357,"Revelation 19-20"],[358,"Revelation 21-22"]];
+
+        const startDate = new Date('2026-01-01');
+
+        // Auth functions
+        window.showSignup = () => {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('signupForm').style.display = 'block';
+            document.getElementById('loginError').textContent = '';
+            document.getElementById('signupError').textContent = '';
+        };
+
+        window.showLogin = () => {
+            document.getElementById('signupForm').style.display = 'none';
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('loginError').textContent = '';
+            document.getElementById('signupError').textContent = '';
+        };
+
+        window.signUp = async () => {
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            const errorEl = document.getElementById('signupError');
+
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+                errorEl.textContent = '';
+            } catch (error) {
+                errorEl.textContent = error.message;
+            }
+        };
+
+        window.signIn = async () => {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const errorEl = document.getElementById('loginError');
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                errorEl.textContent = '';
+            } catch (error) {
+                errorEl.textContent = error.message;
+            }
+        };
+
+        window.signOut = async () => {
+            await fbSignOut(auth);
+        };
+
+        // App functions
+        function getDayOfYear(date) {
+            const start = new Date(date.getFullYear(), 0, 0);
+            const diff = date - start;
+            return Math.floor(diff / (1000 * 60 * 60 * 24));
+        }
+
+        function getDateFromDay(dayNum) {
+            const date = new Date(startDate);
+            date.setDate(date.getDate() + dayNum - 1);
+            return date;
+        }
+
+        function calculateStreak() {
+            let streak = 0;
+            const today = getDayOfYear(new Date());
+            for (let i = today; i >= 1; i--) {
+                if (completedDays[i]) streak++;
+                else break;
+            }
+            return streak;
+        }
+
+        function updateStats() {
+            const completed = Object.keys(completedDays).length;
+            const remaining = 358 - completed;
+            const streak = calculateStreak();
+            const completionPercent = Math.round((completed / 358) * 100);
+
+            document.getElementById('completedCount').textContent = completed;
+            document.getElementById('remainingCount').textContent = remaining;
+            document.getElementById('streakCount').textContent = streak;
+            document.getElementById('completionPercent').textContent = completionPercent + '%';
+            document.getElementById('completionFill').style.width = completionPercent + '%';
+        }
+
+        function updateDisplay(dayNum) {
+            if (dayNum < 1 || dayNum > 358) return;
+            
+            currentDisplayDay = dayNum;
+            const reading = allReadings[dayNum - 1];
+            const displayDate = getDateFromDay(dayNum);
+            const isCompleted = completedDays[dayNum];
+            
+            document.getElementById('dayNumber').textContent = `Day ${reading[0]} of 358`;
+            document.getElementById('readingText').textContent = reading[1];
+            document.getElementById('dateDisplay').textContent = displayDate.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            
+            const progress = (dayNum / 358) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+            document.getElementById('progressPercent').textContent = Math.round(progress) + '%';
+            
+            const card = document.getElementById('readingCard');
+            const btn = document.getElementById('completeBtn');
+            
+            if (isCompleted) {
+                card.classList.add('completed');
+                btn.textContent = 'Mark as Incomplete';
+                btn.className = 'btn-complete mark-incomplete';
+            } else {
+                card.classList.remove('completed');
+                btn.textContent = 'Mark as Complete';
+                btn.className = 'btn-complete mark-complete';
+            }
+            
+            document.getElementById('prevBtn').disabled = dayNum <= 1;
+            document.getElementById('nextBtn').disabled = dayNum >= 358;
+            
+            updateStats();
+        }
+
+        window.toggleComplete = async () => {
+            if (!currentUser) return;
+            
+            if (completedDays[currentDisplayDay]) {
+                delete completedDays[currentDisplayDay];
+            } else {
+                completedDays[currentDisplayDay] = true;
+            }
+            
+            await setDoc(doc(db, 'users', currentUser.uid), {
+                completedDays: completedDays
+            });
+            
+            updateDisplay(currentDisplayDay);
+        };
+
+        window.changeDay = (delta) => {
+            updateDisplay(currentDisplayDay + delta);
+        };
+
+        window.goToToday = () => {
+            const today = new Date();
+            const dayOfYear = getDayOfYear(today);
+            const planDay = Math.min(Math.max(dayOfYear, 1), 358);
+            updateDisplay(planDay);
+        };
+
+        // Auth state observer
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('userEmail').textContent = user.email;
+                document.getElementById('authView').classList.remove('active');
+                document.getElementById('mainView').classList.add('active');
+                
+                // Load user progress from Firestore
+                const userDoc = await getDoc(doc(db, 'users', user.uid));
+                if (userDoc.exists()) {
+                    completedDays = userDoc.data().completedDays || {};
+                } else {
+                    completedDays = {};
+                }
+                
+                // Listen for real-time updates
+                onSnapshot(doc(db, 'users', user.uid), (doc) => {
+                    if (doc.exists()) {
+                        completedDays = doc.data().completedDays || {};
+                        updateDisplay(currentDisplayDay);
+                    }
+                });
+                
+                goToToday();
+            } else {
+                currentUser = null;
+                completedDays = {};
+                document.getElementById('mainView').classList.remove('active');
+                document.getElementById('authView').classList.add('active');
+            }
+        });
+    </script>
+</body>
+</html>
