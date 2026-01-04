@@ -183,6 +183,28 @@
         }
 
         .setup-notice strong { display: block; margin-bottom: 8px; }
+
+        .auth-corner {
+    position: absolute;
+    top: 20px;
+    right: 25px;
+    font-size: 13px;
+    color: black;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-signout-minimal {
+    background: none;
+    border: none;
+    color: black;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0;
+    font-size: 13px;
+    font-family: inherit;
+}
     </style>
 </head>
 <body>
@@ -229,10 +251,11 @@
         <!-- Main App View -->
         <div class="view" id="mainView">
             <h1>Daily Bible Reading</h1>
-            <div class="user-info">
-                <div class="user-email" id="userEmail"></div>
-                <button class="btn-signout" onclick="signOut()">Sign Out</button>
-            </div>
+          <div id="cornerAuth" class="auth-corner" style="display: none;">
+    <span id="userEmail"></span>
+    <span>|</span>
+    <button class="btn-signout-minimal" onclick="signOut()">Sign Out</button>
+</div>
             <div class="date-display" id="dateDisplay"></div>
 
             <div class="reading-card" id="readingCard">
@@ -491,6 +514,17 @@ apiKey: "AIzaSyCbvmSKdLcj9eoS8pPxF1qlv-yrFKMXnEc",
                 document.getElementById('authView').classList.add('active');
             }
         });
+        onAuthStateChanged(auth, async (user) => {
+    const authCorner = document.getElementById('cornerAuth');
+    if (user) {
+        // ... your existing login logic ...
+        document.getElementById('userEmail').textContent = user.email;
+        authCorner.style.display = 'flex'; // <--- SHOW CORNER
+    } else {
+        // ... your existing logout logic ...
+        authCorner.style.display = 'none'; // <--- HIDE CORNER
+    }
+});
     </script>
 </body>
 </html>
