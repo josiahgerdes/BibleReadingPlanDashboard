@@ -94,7 +94,7 @@
                     <span id="completionPercent">0%</span>
                 </div>
                 <div class="progress-bar">
-                    <div class="progress-fill" id="completionFill" style="background: linear-gradient(90deg, #4caf50 0%, #45a049 100%);"></div>
+                    <div class="progress-fill" id="completionFill" style="background: linear-gradient(90deg, #414832 0%, #2d3322 100%);"></div>
                 </div>
             </div>
 
@@ -102,6 +102,30 @@
                 <button class="btn-nav" id="prevBtn" onclick="changeDay(-1)">← Previous</button>
                 <button class="btn-today" onclick="goToToday()">Today</button>
                 <button class="btn-nav" id="nextBtn" onclick="changeDay(1)">Next →</button>
+            </div>
+        </div>
+
+        <button class="btn-settings" onclick="openSettings()">Settings</button>
+
+        <!-- Settings Modal -->
+        <div id="settingsModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Settings</h2>
+                    <button class="btn-close" onclick="closeSettings()">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="setting-group">
+                        <label>Start Date</label>
+                        <input type="date" id="startDateInput" />
+                        <button class="btn-setting" onclick="changeStartDate()">Update Start Date</button>
+                        <p class="setting-description">Change when your reading plan started. This will recalculate which day corresponds to today's date.</p>
+                    </div>
+                    <div class="setting-group">
+                        <button class="btn-setting btn-danger" onclick="markAllPastAsComplete()">Mark All Past Days Complete</button>
+                        <p class="setting-description">Marks all days up to today as completed. This is useful if you're catching up on your reading plan.</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
