@@ -2,7 +2,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut as fbSignOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import { getFirestore, doc, setDoc, getDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { firebaseConfig } from './firebase-config.js';
-import { allReadings, startDate } from './readings.js';
+import { allReadings, startDate as defaultStartDate } from './readings.js';
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
@@ -13,6 +13,7 @@ const db = getFirestore(app);
 let currentUser = null;
 let currentDisplayDay = null;
 let completedDays = {};
+let userStartDate = null;
 
 // Auth functions
 window.showSignup = () => {
@@ -60,14 +61,19 @@ window.signOut = async () => {
 };
 
 // Utility functions
+function getStartDate() {
+    return userStartDate || defaultStartDate;
+}
+
 function getDayOfYear(date) {
-    const start = new Date(date.getFullYear(), 0, 0);
-    const diff = date - start;
-    return Math.floor(diff / (1000 * 60 * 60 * 24));
+    const planStartDate = getStartDate();
+    const diff = date - planStartDate;
+    const dayNum = Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;
+    return dayNum;
 }
 
 function getDateFromDay(dayNum) {
-    const date = new Date(startDate);
+    const date = new Date(getStartDate());
     date.setDate(date.getDate() + dayNum - 1);
     return date;
 }
@@ -162,6 +168,66 @@ window.goToToday = () => {
     updateDisplay(planDay);
 };
 
+// Settings functions
+window.openSettings = () => {
+    const modal = document.getElementById('settingsModal');
+    modal.classList.add('active');
+
+    const input = document.getElementById('startDateInput');
+    const currentStart = getStartDate();
+    input.value = currentStart.toISOString().split('T')[0];
+};
+
+window.closeSettings = () => {
+    const modal = document.getElementById('settingsModal');
+    modal.classList.remove('active');
+};
+
+window.changeStartDate = async () => {
+    if (!currentUser) return;
+
+    const input = document.getElementById('startDateInput');
+    const newDate = new Date(input.value);
+
+    if (isNaN(newDate.getTime())) {
+        alert('Please enter a valid date');
+        return;
+    }
+
+    userStartDate = newDate;
+
+    await setDoc(doc(db, 'users', currentUser.uid), {
+        completedDays: completedDays,
+        startDate: newDate.toISOString()
+    });
+
+    closeSettings();
+    goToToday();
+};
+
+window.markAllPastAsComplete = async () => {
+    if (!currentUser) return;
+
+    const today = new Date();
+    const currentDay = getDayOfYear(today);
+    const daysToMark = Math.min(Math.max(currentDay, 1), 358);
+
+    const confirmMsg = `This will mark days 1-${daysToMark} as complete. Are you sure?`;
+    if (!confirm(confirmMsg)) return;
+
+    for (let i = 1; i <= daysToMark; i++) {
+        completedDays[i] = true;
+    }
+
+    await setDoc(doc(db, 'users', currentUser.uid), {
+        completedDays: completedDays,
+        startDate: userStartDate ? userStartDate.toISOString() : null
+    });
+
+    closeSettings();
+    updateDisplay(currentDisplayDay);
+};
+
 // Auth state observer
 onAuthStateChanged(auth, async (user) => {
     const authCorner = document.getElementById('cornerAuth');
@@ -176,15 +242,20 @@ onAuthStateChanged(auth, async (user) => {
         // Load user progress from Firestore
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (userDoc.exists()) {
-            completedDays = userDoc.data().completedDays || {};
+            const data = userDoc.data();
+            completedDays = data.completedDays || {};
+            userStartDate = data.startDate ? new Date(data.startDate) : null;
         } else {
             completedDays = {};
+            userStartDate = null;
         }
 
         // Listen for real-time updates
         onSnapshot(doc(db, 'users', user.uid), (doc) => {
             if (doc.exists()) {
-                completedDays = doc.data().completedDays || {};
+                const data = doc.data();
+                completedDays = data.completedDays || {};
+                userStartDate = data.startDate ? new Date(data.startDate) : null;
                 updateDisplay(currentDisplayDay);
             }
         });
@@ -193,6 +264,7 @@ onAuthStateChanged(auth, async (user) => {
     } else {
         currentUser = null;
         completedDays = {};
+        userStartDate = null;
         document.getElementById('mainView').classList.remove('active');
         document.getElementById('authView').classList.add('active');
         authCorner.style.display = 'none';
