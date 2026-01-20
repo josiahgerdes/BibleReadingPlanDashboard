@@ -152,7 +152,7 @@ window.toggleComplete = async () => {
 
     await setDoc(doc(db, 'users', currentUser.uid), {
         completedDays: completedDays
-    });
+    }, { merge: true });
 
     updateDisplay(currentDisplayDay);
 };
@@ -197,9 +197,8 @@ window.changeStartDate = async () => {
     userStartDate = newDate;
 
     await setDoc(doc(db, 'users', currentUser.uid), {
-        completedDays: completedDays,
         startDate: newDate.toISOString()
-    });
+    }, { merge: true });
 
     closeSettings();
     goToToday();
@@ -220,9 +219,8 @@ window.markAllPastAsComplete = async () => {
     }
 
     await setDoc(doc(db, 'users', currentUser.uid), {
-        completedDays: completedDays,
-        startDate: userStartDate ? userStartDate.toISOString() : null
-    });
+        completedDays: completedDays
+    }, { merge: true });
 
     closeSettings();
     updateDisplay(currentDisplayDay);
